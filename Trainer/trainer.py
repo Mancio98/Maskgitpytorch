@@ -93,12 +93,17 @@ class Trainer(object):
                                          #     std=[0.229, 0.224, 0.225])
                                          ])
 
-            try:
-                data_train = ImageFolder(os.path.join(self.args.data_folder, "train"), transform=t_train)
-                data_test = ImageFolder(os.path.join(self.args.data_folder, "val"), transform=t_test)
-            except:
-                data_train = ImageNetKaggle(self.args.data_folder, "train", transform=t_train)
-                data_test = ImageNetKaggle(self.args.data_folder, "val", transform=t_test)
+            # try:
+            #     data_train = ImageFolder(os.path.join(self.args.data_folder, "train"), transform=t_train)
+            #     data_test = ImageFolder(os.path.join(self.args.data_folder, "val"), transform=t_test)
+            # except:
+            #     data_train = ImageNetKaggle(self.args.data_folder, "train", transform=t_train)
+            #     data_test = ImageNetKaggle(self.args.data_folder, "val", transform=t_test)
+
+            (train_x, train_y), (test_x, test_y) = process_ds_folder(self.args.data_folder)
+
+            data_train = MyImageNetKaggle(self.args.data_folder, train_x, train_y, t_train)
+            data_test = MyImageNetKaggle(self.args.data_folder, test_x, test_y, t_test)
 
         elif self.args.data == "mscoco":
             data_train = CocoCaptions(root='/datasets_master/COCO/images/train2017/',
@@ -289,3 +294,75 @@ class ImageNetKaggle(Dataset):
         if self.transform:
             x = self.transform(x)
         return x, self.targets[idx]
+    
+
+def process_ds_folder(root):
+    train_samples, train_targets = [],[]
+    test_samples, test_targets = [],[]
+
+    class_to_int, class_to_val, int_to_class = {},{},{}
+
+    with open(os.path.join(root, "Labels.json"), "rb") as f:
+        json_file = json.load(f)
+        for i,(class_id, val) in enumerate(json_file.items()):
+            class_to_val[class_id] = val
+            class_to_int[class_id] = i
+            int_to_class[i] = class_id
+
+
+    samples_dir = os.path.join(root, "train")
+    for entry in os.listdir(samples_dir):
+
+        class_id = entry
+        target = class_to_int[class_id]
+        class_folder = os.path.join(samples_dir, class_id)
+        for sample in os.listdir(class_folder):
+            sample_path = os.path.join(class_folder, sample)
+            train_samples.append(sample_path)
+            train_targets.append(target)
+
+
+    samples_dir = os.path.join(root, "val")
+    for entry in os.listdir(samples_dir):
+
+        class_id = entry
+        target = class_to_int[class_id]
+        class_folder = os.path.join(samples_dir, class_id)
+        for sample in os.listdir(class_folder):
+            sample_path = os.path.join(class_folder, sample)
+        test_samples.append(sample_path)
+        test_targets.append(target)
+    return (train_samples, train_targets),(test_samples, test_targets)
+
+class MyImageNetKaggle(Dataset):
+    def __init__(self, root, x, y, transform=None):
+
+        self.samples = x
+        self.targets = y
+        self.transform = transform
+
+        self.class_to_int, self.class_to_val, self.int_to_class = {},{},{}
+
+        with open(os.path.join(root, "Labels.json"), "rb") as f:
+            json_file = json.load(f)
+            for i,(class_id, val) in enumerate(json_file.items()):
+                self.class_to_val[class_id] = val
+                self.class_to_int[class_id] = i
+                self.int_to_class[i] = class_id
+
+        self.num_of_class = len(np.unique(self.targets))
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        x = Image.open(self.samples[idx]).convert("RGB")
+        if self.transform:
+            x = self.transform(x)
+        return x, self.targets[idx]
+
+    def get_class_val(self, int_class):
+
+        class_id = self.int_to_class[int_class]
+        return self.class_to_val[class_id]
+
