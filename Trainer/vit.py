@@ -43,7 +43,7 @@ class MaskGIT(Trainer):
         # Initialize evaluation object if testing
         if self.args.test_only:
             from Metrics.sample_and_eval import SampleAndEval
-            self.sae = SampleAndEval(device=self.args.device, num_images=50_000)
+            self.sae = SampleAndEval(device=self.args.device, num_images=50_000, num_classes=100)
 
     def get_network(self, archi):
         """ return the network, load checkpoint if self.args.resume == True
@@ -54,7 +54,7 @@ class MaskGIT(Trainer):
         """
         if archi == "vit":
             model = MaskTransformer(
-                img_size=self.args.img_size, hidden_dim=768, codebook_size=self.codebook_size, depth=24, heads=16, mlp_dim=3072, dropout=0.1     # Small
+                img_size=self.args.img_size, hidden_dim=768, codebook_size=self.codebook_size, depth=12, heads=8, mlp_dim=3072, dropout=0.0, nclass=100     # Small
                 # img_size=self.args.img_size, hidden_dim=1024, codebook_size=1024, depth=32, heads=16, mlp_dim=3072, dropout=0.1  # Big
                 # img_size=self.args.img_size, hidden_dim=1024, codebook_size=1024, depth=48, heads=16, mlp_dim=3072, dropout=0.1  # Huge
             )
@@ -213,7 +213,7 @@ class MaskGIT(Trainer):
 
             if self.args.iter % log_iter == 0 and self.args.is_master:
                 # Generate sample for visualization
-                gen_sample = self.sample(nb_sample=10)[0]
+                gen_sample = self.sample(nb_sample=10, w=0)[0]
                 gen_sample = vutils.make_grid(gen_sample, nrow=10, padding=2, normalize=True)
                 self.log_add_img("Images/Sampling", gen_sample, self.args.iter)
                 # Show reconstruction
@@ -336,7 +336,7 @@ class MaskGIT(Trainer):
         with torch.no_grad():
             if labels is None:  # Default classes generated
                 # goldfish, chicken, tiger cat, hourglass, ship, dog, race car, airliner, teddy bear, random
-                labels = [1, 7, 282, 604, 724, 179, 751, 404, 850, random.randint(0, 999)] * (nb_sample // 10)
+                labels = [1, 7, 10, 17, 32, 54, 67, 71, 89, random.randint(0, 999)] * (nb_sample // 10)
                 labels = torch.LongTensor(labels).to(self.args.device)
 
             drop = torch.ones(nb_sample, dtype=torch.bool).to(self.args.device)
