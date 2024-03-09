@@ -27,6 +27,13 @@ if _SCIPY_AVAILABLE:
 import sklearn.metrics
 
 
+device = None
+
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+else:
+    device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+
 class NoTrainInceptionV3(FeatureExtractorInceptionV3):
     def __init__(self, name: str, features_list: List[str], feature_extractor_weights_path: Optional[str] = None) -> None:
         super().__init__(name, features_list, feature_extractor_weights_path)
@@ -120,7 +127,7 @@ class MultiInceptionMetrics(Metric):
             self.inception = NoTrainInceptionV3(
                 name="inception-v3-compat",
                 features_list=[str(feature), "logits_unbiased"],
-            ).to("cuda")
+            ).to(device)
 
         elif isinstance(feature, Module):
             self.inception = feature
@@ -394,8 +401,8 @@ class MultiInceptionMetrics(Metric):
             )
 
         if self.compute_conditional_metrics:
-            fake_cond_features = torch.cat(self.fake_cond_features, dim=0).to("cuda")
-            fake_cond_logits = torch.cat(self.fake_cond_logits, dim=0).to("cuda")
+            fake_cond_features = torch.cat(self.fake_cond_features, dim=0).to(device)
+            fake_cond_logits = torch.cat(self.fake_cond_logits, dim=0).to(device)
             output_metrics["fid_conditional"] = self.fid(real_features, fake_cond_features)
             output_metrics["inception_score_conditional"] = self.inception_score(fake_cond_logits)
             (

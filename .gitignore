@@ -1,1 +1,6 @@
-
+ImageNet10
+ImageNet100
+pretrained_maskgit
+train.sh
+.DS_Store
+logs

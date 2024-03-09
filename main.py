@@ -22,7 +22,7 @@ def main(args):
         import torchvision.utils as vutils
         from torchvision.utils import save_image
         with torch.no_grad():
-            labels, name = [1, 7, 282, 604, 724, 179, 681, 367, 635, random.randint(0, 999)] * 1, "r_row"
+            labels, name = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * 1, "r_row"
             labels = torch.LongTensor(labels).to(args.device)
             sm_temp = 1.3          # Softmax Temperature
             r_temp = 7             # Gumbel Temperature
@@ -82,19 +82,34 @@ if __name__ == "__main__":
     parser.add_argument("--resume",       action='store_true',            help="resume training of the model")
     parser.add_argument("--debug",        action='store_true',            help="debug")
     args = parser.parse_args()
-    args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    device = None
+
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+    else:
+        device = torch.device('mps' if torch.backends.mps.is_available() else 'cpu')
+
+    args.device = device
     args.iter = 0
     args.global_epoch = 0
 
     if args.seed > 0: # Set the seed for reproducibility
         torch.manual_seed(args.seed)
-        torch.cuda.manual_seed(args.seed)
+
+        if device.type == "mps":
+            torch.mps.manual_seed(args.seed)
+        else:
+            torch.cuda.manual_seed(args.seed)
         np.random.seed(args.seed)
         random.seed(args.seed)
         torch.backends.cudnn.enable = False
         torch.backends.cudnn.deterministic = True
-
-    world_size = torch.cuda.device_count()
+    
+    if device.type == "mps":
+        world_size = 1
+    else:
+        world_size = torch.cuda.device_count()
 
     if world_size > 1:  # launch multi training
         print(f"{world_size} GPU(s) found, launch multi-gpus training")

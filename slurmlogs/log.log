@@ -1,39 +1,0 @@
-1 GPU found
-Size of model autoencoder: 72.142M
-Acquired codebook size: 1024
-Size of model vit: 88.184M
-Start training:
-  0%|          | 0/8125 [00:00<?, ?it/s]
-  0%|          | 0/12 [00:00<?, ?it/s][A
-                                      [A                                        Traceback (most recent call last):
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/main.py", line 107, in <module>
-    main(args)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/main.py", line 41, in main
-    maskgit.fit()
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/Trainer/vit.py", line 246, in fit
-    train_loss = self.train_one_epoch()
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/Trainer/vit.py", line 216, in train_one_epoch
-    gen_sample = self.sample(nb_sample=10, w=0)[0]
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/Trainer/vit.py", line 378, in sample
-    logit = self.vit(code.clone(), labels, drop_label=~drop)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/maskgitenv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
-    return forward_call(*input, **kwargs)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/Network/transformer.py", line 186, in forward
-    x, attn = self.transformer(x)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/maskgitenv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
-    return forward_call(*input, **kwargs)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/Network/transformer.py", line 108, in forward
-    attention_value, attention_weight = attn(x)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/maskgitenv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
-    return forward_call(*input, **kwargs)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/Network/transformer.py", line 26, in forward
-    return self.fn(self.norm(x), **kwargs)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/maskgitenv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
-    return forward_call(*input, **kwargs)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/Network/transformer.py", line 76, in forward
-    attention_value, attention_weight = self.mha(x, x, x)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/maskgitenv/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
-    return forward_call(*input, **kwargs)
-  File "/public.hpc/andrea.mancini23/Maskgitpytorch/maskgitenv/lib/python3.9/site-packages/torch/nn/modules/activation.py", line 1113, in forward
-    return torch._native_multi_head_attention(
-RuntimeError: expected scalar type Half but found Float

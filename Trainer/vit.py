@@ -28,6 +28,7 @@ class MaskGIT(Trainer):
         super().__init__(args)
         self.args = args                                                        # Main argument see main.py
         self.scaler = torch.cuda.amp.GradScaler()                               # Init Scaler for multi GPUs
+
         self.ae = self.get_network("autoencoder")
         self.codebook_size = self.ae.n_embed   
         print("Acquired codebook size:", self.codebook_size)   
@@ -43,7 +44,7 @@ class MaskGIT(Trainer):
         # Initialize evaluation object if testing
         if self.args.test_only:
             from Metrics.sample_and_eval import SampleAndEval
-            self.sae = SampleAndEval(device=self.args.device, num_images=50_000, num_classes=100)
+            self.sae = SampleAndEval(device=self.args.device, num_images=50_000, num_classes=10)
 
     def get_network(self, archi):
         """ return the network, load checkpoint if self.args.resume == True
@@ -54,7 +55,7 @@ class MaskGIT(Trainer):
         """
         if archi == "vit":
             model = MaskTransformer(
-                img_size=self.args.img_size, hidden_dim=768, codebook_size=self.codebook_size, depth=12, heads=8, mlp_dim=3072, dropout=0.0, nclass=100     # Small
+                img_size=self.args.img_size, hidden_dim=768, codebook_size=self.codebook_size, depth=24, heads=16, mlp_dim=3072, dropout=0.1     # Small
                 # img_size=self.args.img_size, hidden_dim=1024, codebook_size=1024, depth=32, heads=16, mlp_dim=3072, dropout=0.1  # Big
                 # img_size=self.args.img_size, hidden_dim=1024, codebook_size=1024, depth=48, heads=16, mlp_dim=3072, dropout=0.1  # Huge
             )
@@ -187,7 +188,7 @@ class MaskGIT(Trainer):
             # Mask the encoded tokens
             masked_code, mask = self.get_mask_code(code, value=self.args.mask_value, codebook_size=self.codebook_size)
 
-            with torch.cuda.amp.autocast():                             # half precision
+            with torch.autocast(device_type="cuda"):                             # half precision
                 pred = self.vit(masked_code, y, drop_label=drop_label)  # The unmasked tokens prediction
                 # Cross-entropy loss
                 loss = self.criterion(pred.reshape(-1, self.codebook_size + 1), code.view(-1)) / self.args.grad_cum
@@ -336,7 +337,7 @@ class MaskGIT(Trainer):
         with torch.no_grad():
             if labels is None:  # Default classes generated
                 # goldfish, chicken, tiger cat, hourglass, ship, dog, race car, airliner, teddy bear, random
-                labels = [1, 7, 10, 17, 32, 54, 67, 71, 89, random.randint(0, 999)] * (nb_sample // 10)
+                labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] * (nb_sample // 10) #, random.randint(0,99)] * (nb_sample // 10)
                 labels = torch.LongTensor(labels).to(self.args.device)
 
             drop = torch.ones(nb_sample, dtype=torch.bool).to(self.args.device)
@@ -364,7 +365,7 @@ class MaskGIT(Trainer):
                 if mask.sum() == 0:  # Break if code is fully predicted
                     break
 
-                with torch.cuda.amp.autocast():  # half precision
+                with torch.autocast(device_type="cuda"):  # half precision
                     if w != 0:
                         # Model Prediction
                         logit = self.vit(torch.cat([code.clone(), code.clone()], dim=0),
@@ -387,7 +388,7 @@ class MaskGIT(Trainer):
                 if randomize == "linear":  # add gumbel noise decreasing over the sampling process
                     ratio = (indice / (len(scheduler)-1))
                     rand = r_temp * np.random.gumbel(size=(nb_sample, self.patch_size*self.patch_size)) * (1 - ratio)
-                    conf = torch.log(conf.squeeze()) + torch.from_numpy(rand).to(self.args.device)
+                    conf = torch.log(conf.squeeze()) + torch.from_numpy(rand).to(self.args.device, dtype=torch.float32)
                 elif randomize == "warm_up":  # chose random sample for the 2 first steps
                     conf = torch.rand_like(conf) if indice < 2 else conf
                 elif randomize == "random":   # chose random prediction at each step

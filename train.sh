@@ -1,4 +1,4 @@
-data_folder="./ImageNet100"
+data_folder="./ImageNet10"
 vit_folder="./pretrained_maskgit/MaskGIT/"
 vqgan_folder="./pretrained_maskgit/VQGAN/"
 writer_log="./logs/"
